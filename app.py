@@ -468,7 +468,7 @@ elif page == "Parking Assistant":
                         }
                     )
 
-            if payload.get("type") == "recommendation" and payload.get("data") is not None:
+            if payload.get("type") in ["recommendation", "comparison"] and payload.get("data") is not None:
                 recs = payload["data"].head(5).copy()
                 with st.expander("View recommendation details"):
                     st.dataframe(
