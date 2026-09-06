@@ -26,7 +26,7 @@ Instead of simply showing where parking lots are located, ParkWise estimates **f
 
 ParkWise provides an at-a-glance view of campus parking conditions, including available spaces, campus occupancy and parking-lot utilisation.
 
-![ParkWise Overview](assets/overview.png)
+![ParkWise Overview](assets/parkwise-overview.png)
 
 ---
 
@@ -34,7 +34,7 @@ ParkWise provides an at-a-glance view of campus parking conditions, including av
 
 Users can provide their destination, arrival time and parking preference. ParkWise evaluates parking locations using predicted availability, walking distance and parking cost.
 
-![Find Parking](assets/find-parking.png)
+![Find Parking](assets/parking-recommendation.png)
 
 The recommendation engine also provides an alternative option and a likely availability range instead of presenting the forecast as perfectly certain.
 
