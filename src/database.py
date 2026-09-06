@@ -1,11 +1,16 @@
 from __future__ import annotations
+
 import os
+import io
+
 from pathlib import Path
+
 import pandas as pd
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
-from dotenv import load_dotenv
 
+from dotenv import load_dotenv
 load_dotenv()
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -38,75 +43,257 @@ def init_schema(engine: Engine):
         for stmt in statements:
             conn.execute(text(stmt))
 
-def seed_database(engine: Engine, lots: pd.DataFrame, buildings: pd.DataFrame, history: pd.DataFrame):
+def seed_database(
+    engine: Engine,
+    lots: pd.DataFrame,
+    buildings: pd.DataFrame,
+    history: pd.DataFrame
+):
     """
-    Idempotently load prototype parking lots, buildings and occupancy observations.
+    Load parking lots, buildings and occupancy observations.
+
+    Parking lots/buildings use normal UPSERTs.
+    Occupancy observations use PostgreSQL COPY for fast cloud bulk loading.
     """
+
+    # ---------------------------------------------------------
+    # 1. Insert / update parking lots and buildings
+    # ---------------------------------------------------------
     with engine.begin() as conn:
-        # parking lots
+
+        # Parking lots
         for _, r in lots.iterrows():
-            conn.execute(text("""
-                INSERT INTO parking_lots
-                (lot_id, name, latitude, longitude, capacity, permit_type, hourly_rate)
-                VALUES (:lot_id, :name, :lat, :lon, :capacity, :permit_type, :hourly_rate)
-                ON CONFLICT (lot_id) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude,
-                    capacity = EXCLUDED.capacity,
-                    permit_type = EXCLUDED.permit_type,
-                    hourly_rate = EXCLUDED.hourly_rate
-            """), {
-                "lot_id": r["lot_id"],
-                "name": r["name"],
-                "lat": float(r["lat"]),
-                "lon": float(r["lon"]),
-                "capacity": int(r["capacity"]),
-                "permit_type": r["permit_type"],
-                "hourly_rate": float(r["hourly_rate"]),
-            })
+            conn.execute(
+                text("""
+                    INSERT INTO parking_lots
+                    (
+                        lot_id,
+                        name,
+                        latitude,
+                        longitude,
+                        capacity,
+                        permit_type,
+                        hourly_rate
+                    )
+                    VALUES
+                    (
+                        :lot_id,
+                        :name,
+                        :lat,
+                        :lon,
+                        :capacity,
+                        :permit_type,
+                        :hourly_rate
+                    )
+                    ON CONFLICT (lot_id)
+                    DO UPDATE SET
+                        name = EXCLUDED.name,
+                        latitude = EXCLUDED.latitude,
+                        longitude = EXCLUDED.longitude,
+                        capacity = EXCLUDED.capacity,
+                        permit_type = EXCLUDED.permit_type,
+                        hourly_rate = EXCLUDED.hourly_rate
+                """),
+                {
+                    "lot_id": r["lot_id"],
+                    "name": r["name"],
+                    "lat": float(r["lat"]),
+                    "lon": float(r["lon"]),
+                    "capacity": int(r["capacity"]),
+                    "permit_type": r["permit_type"],
+                    "hourly_rate": float(r["hourly_rate"]),
+                }
+            )
 
-        # buildings
+        # Campus buildings
         for _, r in buildings.iterrows():
-            conn.execute(text("""
-                INSERT INTO campus_buildings
-                (building_name, latitude, longitude)
-                VALUES (:name, :lat, :lon)
-                ON CONFLICT (building_name) DO UPDATE SET
-                    latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude
-            """), {
-                "name": r["building"],
-                "lat": float(r["lat"]),
-                "lon": float(r["lon"]),
-            })
+            conn.execute(
+                text("""
+                    INSERT INTO campus_buildings
+                    (
+                        building_name,
+                        latitude,
+                        longitude
+                    )
+                    VALUES
+                    (
+                        :name,
+                        :lat,
+                        :lon
+                    )
+                    ON CONFLICT (building_name)
+                    DO UPDATE SET
+                        latitude = EXCLUDED.latitude,
+                        longitude = EXCLUDED.longitude
+                """),
+                {
+                    "name": r["building"],
+                    "lat": float(r["lat"]),
+                    "lon": float(r["lon"]),
+                }
+            )
 
-    # bulk occupancy load in chunks, keeping it idempotent
-    payload = history[[
-        "lot_id","timestamp","occupied","available","occupancy_rate",
-        "rain_mm","event_flag","exam_period"
-    ]].copy()
-    payload = payload.rename(columns={
-        "timestamp":"observed_at",
-        "occupied":"occupied_spaces",
-        "available":"available_spaces",
-    })
+    # ---------------------------------------------------------
+    # 2. Prepare occupancy dataframe
+    # ---------------------------------------------------------
+    payload = history[
+        [
+            "lot_id",
+            "timestamp",
+            "occupied",
+            "available",
+            "occupancy_rate",
+            "rain_mm",
+            "event_flag",
+            "exam_period",
+        ]
+    ].copy()
 
-    rows = payload.to_dict("records")
-    insert_sql = text("""
-        INSERT INTO occupancy_observations
-        (lot_id, observed_at, occupied_spaces, available_spaces,
-         occupancy_rate, rain_mm, event_flag, exam_period)
-        VALUES
-        (:lot_id, :observed_at, :occupied_spaces, :available_spaces,
-         :occupancy_rate, :rain_mm, :event_flag, :exam_period)
-        ON CONFLICT (lot_id, observed_at) DO NOTHING
-    """)
+    payload = payload.rename(
+        columns={
+            "timestamp": "observed_at",
+            "occupied": "occupied_spaces",
+            "available": "available_spaces",
+        }
+    )
 
-    chunk_size = 2000
-    with engine.begin() as conn:
-        for i in range(0, len(rows), chunk_size):
-            conn.execute(insert_sql, rows[i:i+chunk_size])
+    # PostgreSQL BOOLEAN values
+    payload["event_flag"] = (
+        payload["event_flag"]
+        .astype(bool)
+        .map({True: "t", False: "f"})
+    )
+
+    payload["exam_period"] = (
+        payload["exam_period"]
+        .astype(bool)
+        .map({True: "t", False: "f"})
+    )
+
+    # Ensure timestamps are PostgreSQL-friendly
+    payload["observed_at"] = pd.to_datetime(
+        payload["observed_at"]
+    ).dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    print(
+        f"Uploading {len(payload):,} occupancy observations "
+        "using PostgreSQL COPY..."
+    )
+
+    # ---------------------------------------------------------
+    # 3. Convert dataframe to in-memory CSV
+    # ---------------------------------------------------------
+    buffer = io.StringIO()
+
+    payload.to_csv(
+        buffer,
+        index=False,
+        header=False,
+        na_rep="\\N",
+    )
+
+    buffer.seek(0)
+
+    # ---------------------------------------------------------
+    # 4. COPY into a temporary table
+    # ---------------------------------------------------------
+    raw_conn = engine.raw_connection()
+
+    try:
+        cursor = raw_conn.cursor()
+
+        cursor.execute("""
+            CREATE TEMP TABLE temp_occupancy_observations
+            (
+                lot_id TEXT,
+                observed_at TIMESTAMP,
+                occupied_spaces INTEGER,
+                available_spaces INTEGER,
+                occupancy_rate DOUBLE PRECISION,
+                rain_mm DOUBLE PRECISION,
+                event_flag BOOLEAN,
+                exam_period BOOLEAN
+            )
+            ON COMMIT DROP;
+        """)
+
+        cursor.copy_expert(
+            """
+            COPY temp_occupancy_observations
+            (
+                lot_id,
+                observed_at,
+                occupied_spaces,
+                available_spaces,
+                occupancy_rate,
+                rain_mm,
+                event_flag,
+                exam_period
+            )
+            FROM STDIN
+            WITH
+            (
+                FORMAT CSV,
+                NULL '\\N'
+            );
+            """,
+            buffer,
+        )
+
+        print("Bulk upload completed. Saving observations...")
+
+        # -----------------------------------------------------
+        # 5. Move from temporary table to actual table
+        #    while keeping setup idempotent
+        # -----------------------------------------------------
+        cursor.execute("""
+            INSERT INTO occupancy_observations
+            (
+                lot_id,
+                observed_at,
+                occupied_spaces,
+                available_spaces,
+                occupancy_rate,
+                rain_mm,
+                event_flag,
+                exam_period
+            )
+            SELECT
+                lot_id,
+                observed_at,
+                occupied_spaces,
+                available_spaces,
+                occupancy_rate,
+                rain_mm,
+                event_flag,
+                exam_period
+            FROM temp_occupancy_observations
+            ON CONFLICT (lot_id, observed_at)
+            DO NOTHING;
+        """)
+
+        raw_conn.commit()
+
+        cursor.execute("""
+            SELECT COUNT(*)
+            FROM occupancy_observations;
+        """)
+
+        total_rows = cursor.fetchone()[0]
+
+        print(
+            f"✓ Database now contains "
+            f"{total_rows:,} occupancy observations."
+        )
+
+        cursor.close()
+
+    except Exception:
+        raw_conn.rollback()
+        raise
+
+    finally:
+        raw_conn.close()
 
 def load_from_database(engine: Engine):
     lots = pd.read_sql("""
