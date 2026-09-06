@@ -1,257 +1,114 @@
-# ParkWise
+# 🅿️ ParkWise
 
-### ML-Powered Campus Parking Intelligence & Decision-Support Platform
+### Intelligent University Parking Prediction & Recommendation Platform
 
-**Python · Streamlit · PostgreSQL · Machine Learning · Geospatial Analytics · Conversational AI**
+ParkWise is an end-to-end parking intelligence prototype that combines **machine learning, PostgreSQL, geospatial analytics, interactive visualisation, recommendation logic, and a conversational AI assistant** to help university students and staff make better parking decisions.
 
-[Live Demo](https://parkwise-campus-parking.streamlit.app/) · [GitHub Repository](https://github.com/shahzeel26/parkwise-campus-parking)
+Instead of simply showing where parking lots are located, ParkWise estimates **future parking occupancy**, compares parking options based on **availability, walking distance and cost**, and allows users to ask natural-language questions such as:
 
----
+> "I want to go to the library."
 
-## Overview
+> "Which option is cheapest?"
 
-ParkWise is an end-to-end campus parking intelligence platform that combines **machine-learning occupancy forecasting, geospatial analysis, PostgreSQL, recommendation logic, interactive analytics, and a conversational parking assistant**.
+> "Which one is closest?"
 
-The platform is designed around a practical question:
+> "Will P1 be full at 9:30 AM?"
 
-> **Given where I am going, when I will arrive, and what I care about most, where should I park?**
+> "What if I arrive at 11 AM?"
 
-Instead of simply displaying parking data, ParkWise predicts future parking demand and helps users make parking decisions based on:
-
-- predicted space availability
-- walking distance to their destination
-- parking cost
-- arrival time
-- user preferences
-- maximum walking constraints
+🌐 **Live Demo:** https://parkwise-campus-parking.streamlit.app/
 
 ---
 
-## Live Application
+## 📸 Application Preview
 
-**Try ParkWise:**  
-https://parkwise-campus-parking.streamlit.app/
+### Campus Parking Overview
 
-The deployed application includes:
+ParkWise provides an at-a-glance view of campus parking conditions, including available spaces, campus occupancy and parking-lot utilisation.
 
-- Overview dashboard
-- Interactive parking map
-- Parking recommendation engine
-- Demand forecasting
-- Historical analytics
-- Conversational Parking Assistant
-- Model performance and feature insights
+![ParkWise Overview](assets/overview.png)
 
 ---
 
-## Key Features
+### Smart Parking Recommendation
 
-### Parking Availability Dashboard
+Users can provide their destination, arrival time and parking preference. ParkWise evaluates parking locations using predicted availability, walking distance and parking cost.
 
-Provides a campus-wide overview of:
+![Find Parking](assets/find-parking.png)
 
-- available spaces
-- overall parking utilisation
-- busiest parking areas
-- typical demand peaks
-- current parking status
+The recommendation engine also provides an alternative option and a likely availability range instead of presenting the forecast as perfectly certain.
 
 ---
 
-### Interactive Parking Map
+### Parking Assistant
 
-Displays parking areas geographically using PyDeck.
+The Parking Assistant provides a conversational interface over ParkWise's forecasting and recommendation functions.
 
-Each parking location shows:
+It supports multi-turn questions while retaining relevant context.
 
-- estimated available spaces
-- occupancy level
-- total capacity
-- permit information
-- hourly parking rate
-
-Parking status is visually classified as:
-
-- Available
-- Moderate
-- Busy
-- Nearly full
-
----
-
-### Intelligent Parking Recommendation
-
-Users select:
-
-- destination
-- arrival date
-- arrival time
-- parking preference
-- expected rainfall
-- campus-event conditions
-
-ParkWise then evaluates the available parking areas and recommends the most suitable option.
-
-Users can optimise for:
-
-- **Best overall**
-- **Shortest walk**
-- **Most availability**
-- **Lowest cost**
-
-The recommendation combines **ML predictions, geospatial distance, parking availability, and pricing**.
-
----
-
-### Demand Forecasting
-
-ParkWise predicts parking occupancy at **30-minute intervals** throughout the day.
-
-For each parking area, the application estimates:
-
-- predicted occupancy
-- expected available spaces
-- peak occupancy
-- expected peak time
-- likely availability range
-
----
-
-### Parking Analytics
-
-The analytics dashboard explores historical parking behaviour through:
-
-- hourly demand patterns
-- weekday utilisation
-- parking-lot comparisons
-- demand heatmaps
-- peak and quiet periods
-
----
-
-## Parking Assistant
-
-ParkWise includes a conversational decision-support assistant that allows users to interact with the parking system using natural language.
+![Parking Assistant](assets/parking-assistant.png)
 
 Example conversation:
 
 ```text
-User:
-I want to go to the library.
+User: I want to go to the library.
 
 ParkWise:
-Recommends a suitable parking area using predicted availability,
-walking distance and cost.
+I recommend Library West (P3).
 
-User:
-Which option is cheapest?
+User: Which option is cheapest?
 
 ParkWise:
-Compares the available parking options by hourly price.
+South Campus (P6) is the cheapest option.
 
-User:
-Which one is closest?
-
-ParkWise:
-Compares the options by walking distance.
-
-User:
-I don't want to walk more than 2 minutes.
+User: Which one is closest?
 
 ParkWise:
-Applies the walking limit as a hard constraint and recalculates.
-
-User:
-What if I arrive at 11 AM?
-
-ParkWise:
-Retains the conversation context and recalculates for 11 AM.
+Library West (P3) is the closest option.
 ```
 
-The assistant can handle:
-
-- parking recommendations
-- price comparisons
-- walking-distance comparisons
-- availability comparisons
-- specific parking-lot forecasts
-- arrival-time changes
-- maximum walking constraints
-- historical parking questions
-- recommendation explanations
+The assistant does not allow the LLM to invent parking availability or recommendation scores. Predictions and recommendations are generated by ParkWise's underlying Python, ML and geospatial functions.
 
 ---
 
-## Grounded AI Architecture
+## 📈 Parking Demand Forecasting
 
-The Parking Assistant is designed as a **tool-grounded assistant rather than a free-form chatbot**.
+ParkWise predicts parking occupancy throughout the day in half-hour intervals.
 
-Parking availability and recommendation numbers are calculated by ParkWise's own ML and decision functions.
+![Demand Forecast](assets/demand-forecast.png)
 
-The LLM does **not** invent parking availability, prices, walking distances, or recommendation scores.
+The forecast interface provides:
 
-```text
-User Question
-      |
-      v
-Intent & Context Router
-      |
-      v
-Conversation State
-      |
-      v
-Parking Tool
-      |
-      +-----------------------------+
-      |              |              |
-      v              v              v
-Recommendation   Lot Forecast   Comparison
-      |              |              |
-      +--------------+--------------+
-                     |
-                     v
-           ML + Geospatial Logic
-                     |
-                     v
-             Grounded Response
-```
+- predicted occupancy throughout the day
+- peak occupancy
+- predicted peak time
+- expected spaces available at peak
+- uncertainty ranges around predictions
 
-ParkWise uses a **deterministic-first routing approach** for common parking requests.
-
-An optional LLM layer can handle less predictable natural-language requests.
-
-This means the core parking functionality can continue to operate even when the LLM API is unavailable.
+This allows users to understand **when parking demand is expected to increase or decrease**, rather than relying only on a current snapshot.
 
 ---
 
-## Machine Learning
+## 🧠 Machine Learning
 
-ParkWise uses a **Random Forest regression model** to predict parking occupancy.
+ParkWise uses a **Random Forest regression model** to estimate parking occupancy.
 
-### Features
-
-The model uses features including:
+Model inputs include:
 
 - parking-lot identity
-- capacity
+- parking capacity
 - hour of day
+- cyclical time features
 - day of week
 - month
 - weekend indicator
-- cyclical time features
 - rainfall
-- campus-event flag
-- exam-period flag
+- campus-event indicator
+- exam-period indicator
 
-### Evaluation
+### Model Evaluation
 
-The model is evaluated using a **time-ordered 80/20 holdout split** rather than a random split.
-
-This better represents the real forecasting problem:
-
-> Train using earlier observations and evaluate predictions on later observations.
-
-Current evaluation on the synthetic university parking dataset:
+The model is evaluated using a **time-ordered 80/20 holdout split**, preserving the temporal ordering of parking observations.
 
 | Metric | Result |
 |---|---:|
@@ -259,115 +116,220 @@ Current evaluation on the synthetic university parking dataset:
 | RMSE | 0.0275 |
 | R² | 0.981 |
 
-These results apply to the project's **synthetic dataset** and should not be interpreted as performance on a real university parking system.
+![Model Insights](assets/model-insights.png)
+
+The Model Insights interface also exposes relative feature importance to make the model's behaviour easier to interpret.
+
+> **Important:** These results are obtained from a synthetic parking dataset designed with structured university parking patterns. They should not be interpreted as expected performance on a real-world university parking system.
 
 ---
 
-## Recommendation Engine
+## 🗺️ Geospatial Parking Intelligence
 
-For a selected destination and arrival time, ParkWise:
+ParkWise combines parking predictions with geographic information to help users understand parking availability across campus.
 
-1. predicts occupancy for each parking area
-2. estimates the number of available spaces
-3. calculates approximate walking distance to the destination
-4. considers hourly parking price
-5. normalises availability, distance and cost
-6. ranks parking areas according to the user's preference
-7. applies constraints such as maximum walking time
+![Parking Map](assets/parking-map.png)
 
-This allows ParkWise to answer different decision questions such as:
+Parking markers communicate estimated availability, while the recommendation engine uses destination-to-parking distance to estimate walking time.
+
+This enables ParkWise to answer questions such as:
+
+- Which parking area is closest to my destination?
+- Which parking area is cheapest?
+- Which location is likely to have the most spaces?
+- What is the best overall parking option?
+
+---
+
+## ⚙️ How ParkWise Works
 
 ```text
-Where should I park?
-
-Which option is cheapest?
-
-Which parking area is closest?
-
-Which one is likely to have the most spaces?
+                 Parking observations
+                         │
+                         ▼
+                    PostgreSQL
+                         │
+                         ▼
+                Feature Engineering
+                         │
+                         ▼
+              Random Forest Regressor
+                         │
+                 Occupancy Forecast
+                         │
+          ┌──────────────┴──────────────┐
+          │                             │
+          ▼                             ▼
+   Analytics Layer             Recommendation Engine
+                                        │
+                              ┌─────────┴─────────┐
+                              │                   │
+                              ▼                   ▼
+                     Geospatial Logic      Parking Assistant
+                              │                   │
+                              └─────────┬─────────┘
+                                        ▼
+                                 Streamlit UI
 ```
 
 ---
 
-## PostgreSQL Data Layer
+## 🤖 Parking Assistant Architecture
 
-ParkWise uses **PostgreSQL** as its primary application database.
-
-The deployed application uses a hosted **Neon PostgreSQL** database.
-
-The database contains:
-
-- **6 parking areas**
-- **30,240 occupancy observations**
-- campus-building metadata
-- generated parking forecasts
-
-The database layer is accessed through **SQLAlchemy**.
-
-For efficient cloud database setup, ParkWise uses PostgreSQL's **COPY** operation to bulk-load occupancy observations rather than inserting thousands of rows individually.
-
-If PostgreSQL is unavailable, the application can fall back to the bundled demonstration dataset.
-
----
-
-## System Architecture
+The conversational assistant uses a **deterministic-first architecture**.
 
 ```text
-Synthetic Parking Observations
-            |
-            v
-      PostgreSQL / Neon
-            |
-            v
-      Data Processing
-            |
-            v
-     Feature Engineering
-            |
-            v
-   Random Forest Forecasting
-            |
-      +-----+------+
-      |            |
-      v            v
-  Analytics    Occupancy Forecast
-                   |
-                   v
-          Recommendation Engine
-                   |
-        +----------+----------+
-        |                     |
-        v                     v
- Interactive UI       Parking Assistant
-        |                     |
-        +----------+----------+
-                   |
-                   v
-             Streamlit App
+User Question
+     │
+     ▼
+Intent & Context Parser
+     │
+     ├── Destination change
+     ├── Arrival-time change
+     ├── Walking constraint
+     ├── Cheapest option
+     ├── Closest option
+     ├── Availability request
+     ├── Specific lot forecast
+     ├── Historical demand
+     └── Recommendation explanation
+     │
+     ▼
+Conversation State
+     │
+     ▼
+ParkWise Tool
+     │
+     ├── recommend_parking()
+     ├── predict_lot()
+     └── historical_peak()
+     │
+     ▼
+ML Forecast + Geospatial Logic
+     │
+     ▼
+Grounded Response
 ```
+
+For unusual or less structured language, ParkWise can optionally use an LLM to interpret the request and select the appropriate application function.
+
+The LLM acts as a **natural-language interface**, not as the source of parking predictions.
 
 ---
 
-## Technology Stack
+## 💬 Conversational Memory
 
-| Component | Technology |
+The Parking Assistant maintains conversation state for information such as:
+
+```text
+destination
+arrival date/time
+parking preference
+maximum walking time
+last recommended parking lot
+```
+
+For example:
+
+```text
+User:
+I don't want to walk more than 2 minutes.
+
+User:
+What about the library?
+```
+
+ParkWise retains the two-minute walking constraint when evaluating parking near the library.
+
+Walking limits are treated as **hard constraints**. If no parking option satisfies the requirement, the assistant reports that rather than silently recommending an unsuitable option.
+
+---
+
+## 🗄️ PostgreSQL Data Layer
+
+ParkWise supports PostgreSQL-backed operation.
+
+The database stores:
+
+```text
+parking_lots
+campus_buildings
+occupancy_observations
+occupancy_forecasts
+```
+
+The project database contains **30,240 simulated occupancy observations across six parking locations**.
+
+PostgreSQL provides persistent storage for parking metadata and historical observations and allows generated forecasts to be stored for later analysis.
+
+If PostgreSQL is unavailable, ParkWise can fall back to the bundled dataset.
+
+---
+
+## 🧩 Recommendation Engine
+
+Parking recommendations combine three main factors:
+
+### Availability
+
+The ML model estimates future occupancy and available spaces.
+
+### Walking Distance
+
+Geospatial distance between the selected destination and each parking location is converted into approximate walking time.
+
+### Parking Cost
+
+Hourly parking rates allow users to prioritise cheaper options.
+
+Users can therefore select preferences such as:
+
+```text
+Best overall
+Closest
+Cheapest
+Most available
+```
+
+The system ranks parking locations according to the selected preference while respecting applicable hard constraints.
+
+---
+
+## 📊 Analytics
+
+ParkWise also provides historical parking analytics for exploring patterns such as:
+
+- hourly occupancy
+- weekday demand
+- parking-lot utilisation
+- peak demand periods
+- parking demand heatmaps
+
+These views help distinguish **historical parking behaviour** from **future ML forecasts**.
+
+---
+
+## 🛠️ Technology Stack
+
+| Area | Technology |
 |---|---|
 | Programming | Python |
 | Web Application | Streamlit |
-| Data Processing | Pandas, NumPy |
-| Machine Learning | scikit-learn, Random Forest |
-| Database | PostgreSQL, Neon |
-| Database Integration | SQLAlchemy, psycopg2 |
+| Machine Learning | scikit-learn |
+| Model | Random Forest Regressor |
+| Data Processing | pandas, NumPy |
+| Database | PostgreSQL |
+| Database Access | SQLAlchemy, psycopg2 |
 | Visualisation | Plotly |
-| Geospatial Visualisation | PyDeck |
-| Conversational AI | Intent routing + optional LLM tool calling |
+| Geospatial | Folium / geographic distance logic |
+| Conversational AI | Deterministic routing + optional LLM |
 | LLM Integration | OpenAI-compatible API / OpenRouter |
-| Testing | pytest |
 | Deployment | Streamlit Community Cloud |
+| Version Control | Git & GitHub |
 
 ---
 
-## Project Structure
+## 📂 Project Structure
 
 ```text
 parkwise-campus-parking/
@@ -376,28 +338,30 @@ parkwise-campus-parking/
 ├── setup_db.py
 ├── requirements.txt
 ├── README.md
+├── .env.example
+│
+├── assets/
+│   ├── overview.png
+│   ├── find-parking.png
+│   ├── parking-assistant.png
+│   ├── demand-forecast.png
+│   ├── model-insights.png
+│   └── parking-map.png
 │
 ├── data/
+│   └── ...
 │
-├── sql/
-│   └── schema.sql
-│
-├── src/
-│   ├── conversation.py
-│   ├── data.py
-│   ├── database.py
-│   ├── intent_router.py
-│   ├── model.py
-│   ├── recommender.py
-│   ├── tool_assistant.py
-│   └── ui.py
-│
-└── tests/
+└── src/
+    ├── database.py
+    ├── ...
+    └── ...
 ```
+
+> The exact contents of `src/` may vary as the application evolves.
 
 ---
 
-## Run Locally
+## 🚀 Running ParkWise Locally
 
 ### 1. Clone the repository
 
@@ -412,118 +376,208 @@ Windows:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.venv\Scripts\activate
 ```
 
 macOS/Linux:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
 ### 3. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-### 4. Configure environment variables
-
-Create a `.env` file if you want to use PostgreSQL and/or the optional LLM integration.
-
-```text
-DATABASE_URL=postgresql+psycopg2://USER:PASSWORD@HOST/DATABASE?sslmode=require
-
-LLM_API_KEY=your_key
-LLM_BASE_URL=https://openrouter.ai/api/v1
-LLM_MODEL=your_model_name
-```
-
-Never commit `.env`, database passwords, or API keys to GitHub.
-
-### 5. Initialise PostgreSQL
-
-```bash
-python setup_db.py
-```
-
-### 6. Run ParkWise
+### 4. Run ParkWise
 
 ```bash
 python -m streamlit run app.py
 ```
 
+The application can operate using its bundled fallback data without requiring PostgreSQL or an LLM API.
+
 ---
 
-## Data Transparency
+## 🗄️ Optional PostgreSQL Setup
 
-The parking occupancy observations used in this project are **synthetically generated**.
+Set the database connection using an environment variable:
 
-The dataset is designed to reproduce realistic university parking behaviour including:
+```text
+DATABASE_URL=postgresql+psycopg2://USERNAME:PASSWORD@HOST/DATABASE
+```
 
-- weekday morning arrival peaks
+Then initialise the database:
+
+```bash
+python setup_db.py
+```
+
+The setup process creates the required schema and loads the parking dataset.
+
+After setup, the database contains the parking metadata and **30,240 occupancy observations** used by the application.
+
+---
+
+## 🤖 Optional LLM Setup
+
+The Parking Assistant can operate without an API key using deterministic/local routing.
+
+For optional LLM-based interpretation, configure:
+
+```text
+LLM_API_KEY=your_api_key
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL=your_model
+```
+
+Never commit API keys or `.env` files to GitHub.
+
+---
+
+## 🔐 Streamlit Deployment
+
+For deployment, environment variables such as database credentials and API keys should be stored using **Streamlit Secrets** rather than committed to the repository.
+
+Example:
+
+```toml
+DATABASE_URL = "your-database-connection-string"
+LLM_API_KEY = "your-api-key"
+LLM_BASE_URL = "https://openrouter.ai/api/v1"
+LLM_MODEL = "your-model"
+```
+
+---
+
+## 🧪 Data Transparency
+
+ParkWise currently uses a **synthetic university parking dataset**.
+
+The data was generated to reproduce realistic parking behaviour such as:
+
+- weekday morning arrivals
 - weekday/weekend differences
-- parking-lot capacity differences
+- different parking-lot capacities
 - rainfall effects
 - campus events
 - exam-period effects
+- time-of-day demand patterns
 
-The parking and building coordinates are also illustrative for the prototype.
+Campus coordinates used by the prototype are illustrative.
 
-ParkWise should therefore be viewed as a **parking intelligence prototype**, not an official live university parking service.
+Therefore, ParkWise should be viewed as a **working data-science and software-engineering prototype**, not as an official live university parking service.
 
-The system architecture is designed so that the synthetic data layer could later be replaced with:
-
-- parking sensors
-- access-control data
-- parking APIs
-- IoT occupancy feeds
-- university parking systems
-
-without redesigning the entire application.
+A production implementation could replace the synthetic observations with data from parking sensors, entry/exit counters, cameras, university APIs or other real-time occupancy systems.
 
 ---
 
-## Why I Built ParkWise
+## 🔮 Potential Future Improvements
 
-The goal of ParkWise was to build more than a standalone machine-learning notebook.
+ParkWise could be extended with:
 
-The project demonstrates how machine learning can be integrated into a complete decision-support product involving:
-
-- data engineering
-- PostgreSQL
-- machine-learning forecasting
-- geospatial analytics
-- recommendation systems
-- interactive dashboards
-- conversational AI
-- cloud deployment
-
----
-
-## Future Improvements
-
-Potential extensions include:
-
-- live parking-sensor integration
-- real walking-route calculations
-- live weather API integration
-- university event-calendar integration
-- permit-aware recommendations
-- authentication
-- real-time occupancy updates
+- real-time parking sensor feeds
+- live university parking APIs
+- weather API integration
+- event-calendar integration
+- GPS-based user location
+- dynamic walking routes
 - model monitoring and drift detection
 - automated model retraining
+- real-time notifications when parking becomes available
+- cloud-hosted ML inference
+- authentication and personalised parking preferences
 
 ---
 
-## Author
+## 🎯 What This Project Demonstrates
+
+ParkWise was built to demonstrate an end-to-end combination of:
+
+**Machine Learning**
+- regression modelling
+- feature engineering
+- time-aware model evaluation
+- model interpretation
+- uncertainty-aware predictions
+
+**Data Engineering**
+- PostgreSQL
+- database schema design
+- bulk data loading
+- persistent forecast storage
+- CSV fallback handling
+
+**Data Analytics**
+- historical demand analysis
+- interactive dashboards
+- occupancy visualisation
+- demand heatmaps
+
+**Software Engineering**
+- modular Python application design
+- separation of ML, recommendation and UI logic
+- environment-based configuration
+- Git/GitHub workflow
+- cloud deployment
+
+**AI Engineering**
+- natural-language intent interpretation
+- deterministic routing
+- conversational state
+- tool-based grounded responses
+- optional LLM integration
+
+**Geospatial Analytics**
+- parking-location mapping
+- destination-distance calculations
+- estimated walking time
+- location-aware recommendation logic
+
+---
+
+## 💡 Project Summary
+
+ParkWise demonstrates how **machine learning, data engineering, geospatial analytics and conversational AI can be integrated into a single decision-support application**.
+
+Rather than building an ML model in isolation, the project connects the full workflow:
+
+```text
+Data
+  ↓
+Database
+  ↓
+Feature Engineering
+  ↓
+Machine Learning
+  ↓
+Forecasting
+  ↓
+Recommendation
+  ↓
+Geospatial Analysis
+  ↓
+Conversational Interface
+  ↓
+Deployed Application
+```
+
+The result is an end-to-end prototype that converts parking data into practical, user-facing decisions.
+
+---
+
+## 👤 Author
 
 **Zeel Shah**  
-Master of Data Science  
-University of Western Australia
+Master of Data Science — The University of Western Australia
 
-**Live Demo:** https://parkwise-campus-parking.streamlit.app/
+GitHub: https://github.com/shahzeel26
 
-**GitHub:** https://github.com/shahzeel26/parkwise-campus-parking
+---
+
+## ⚠️ Disclaimer
+
+ParkWise is a portfolio and educational prototype. Parking observations and prototype coordinates are simulated/illustrative and should not be interpreted as official live university parking information.
